@@ -14,6 +14,7 @@ from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 
 from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context
+from relevance import calculate_relevance
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -128,6 +129,12 @@ class ContextRequest(BaseModel):
 class ContextResponse(ContextRequest):
     created_at: str
     updated_at: str
+
+
+class RelevanceResponse(BaseModel):
+    score: int
+    reasons: list[str]
+    signals: dict[str, float]
 
 
 # ----- System prompt (same contract as before) -----
@@ -297,6 +304,20 @@ async def upsert_context_endpoint(payload: ContextRequest):
         goals=payload.goals,
     )
     return ctx
+
+
+# ----- Relevance API endpoint -----
+@app.get("/api/memories/{memory_id}/relevance", response_model=RelevanceResponse)
+async def get_memory_relevance(memory_id: int):
+    """Calculate relevance of a memory to the current user context."""
+    memory = get_memory(memory_id)
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    context = get_context()
+    if not context:
+        raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
+    relevance = calculate_relevance(memory, context)
+    return relevance
 
 
 # ----- Run with: uvicorn main:app --reload --port 8000 -----

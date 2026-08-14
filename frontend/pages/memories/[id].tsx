@@ -9,6 +9,7 @@ export default function MemoryDetailPage() {
   const router = useRouter()
   const { id } = router.query
   const [memory, setMemory] = useState<Memory | null>(null)
+  const [relevance, setRelevance] = useState<{score:number; reasons:string[]} | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -23,6 +24,12 @@ export default function MemoryDetailPage() {
         if (!res.ok) throw new Error('Unable to load memory')
         const data = await res.json()
         setMemory(data)
+        // fetch relevance
+        const relRes = await fetch(`${API_BASE}/api/memories/${id}/relevance`)
+        if (relRes.ok) {
+          const rel = await relRes.json()
+          setRelevance({ score: rel.score, reasons: rel.reasons })
+        }
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -67,6 +74,15 @@ export default function MemoryDetailPage() {
 
       <h1>{memory.title}</h1>
       <p className="description">Category: {memory.category} • Created {date} • Updated {updated}</p>
+
+      {relevance && (
+        <div className="relevance-box">
+          <strong>Relevance: {relevance.score}/100</strong>
+          <ul>
+            {relevance.reasons.map((r, i) => <li key={i}>{r}</li>)}
+          </ul>
+        </div>
+      )}
 
       <div className="detail-section">
         <h3>Original text</h3>

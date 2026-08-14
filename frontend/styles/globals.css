@@ -107,3 +107,15 @@ pre { margin: 0; white-space: pre-wrap; }
 
 .form-section { margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #eee; border-radius: 6px; background: #fff; }
 .form-section legend { font-weight: 600; margin-bottom: 0.5rem; color: #333; }
+
+/* Relevance box */
+.relevance-box {
+  margin-top: 1rem;
+  padding: 0.75rem 1rem;
+  background: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  border-radius: 4px;
+}
+.relevance-box strong { color: #2e7d32; }
+.relevance-box ul { margin: 0.5rem 0 0 1.2rem; padding: 0; }
+.relevance-box li { font-size: 0.9rem; color: #333; }
