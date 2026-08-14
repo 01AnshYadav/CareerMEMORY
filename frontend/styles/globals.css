@@ -104,3 +104,6 @@ pre { margin: 0; white-space: pre-wrap; }
 .form-group label { display: block; margin-bottom: 0.3rem; font-weight: 500; }
 .form-group input, .form-group textarea { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
 .success { color: #080; margin-top: 1rem; }
+
+.form-section { margin-bottom: 1.5rem; padding: 1rem; border: 1px solid #eee; border-radius: 6px; background: #fff; }
+.form-section legend { font-weight: 600; margin-bottom: 0.5rem; color: #333; }

@@ -129,50 +129,61 @@ export default function ContextPage() {
       {saved && <div className="success">Context saved successfully ✓</div>}
 
       <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label htmlFor="name">Name</label>
-          <input id="name" name="name" value={form.name} onChange={handleChange} />
-        </div>
+        <fieldset className="form-section">
+          <legend>Identity</legend>
+          <div className="form-group">
+            <label htmlFor="name">Name</label>
+            <input id="name" name="name" value={form.name} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="current_role">Current role</label>
+            <input id="current_role" name="current_role" value={form.current_role} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="education">Education</label>
+            <input id="education" name="education" value={form.education} onChange={handleChange} />
+          </div>
+        </fieldset>
 
-        <div className="form-group">
-          <label htmlFor="current_role">Current role</label>
-          <input id="current_role" name="current_role" value={form.current_role} onChange={handleChange} />
-        </div>
+        <fieldset className="form-section">
+          <legend>Career</legend>
+          <div className="form-group">
+            <label htmlFor="career_goal">Career goal</label>
+            <textarea id="career_goal" name="career_goal" value={form.career_goal} onChange={handleChange} rows={2} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="target_roles">Target roles (comma separated)</label>
+            <input id="target_roles" name="target_roles" value={form.target_roles} onChange={handleChange} />
+          </div>
+        </fieldset>
 
-        <div className="form-group">
-          <label htmlFor="education">Education</label>
-          <input id="education" name="education" value={form.education} onChange={handleChange} />
-        </div>
+        <fieldset className="form-section">
+          <legend>Skills & Interests</legend>
+          <div className="form-group">
+            <label htmlFor="interests">Interests (comma separated)</label>
+            <input id="interests" name="interests" value={form.interests} onChange={handleChange} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="current_skills">Current skills (comma separated)</label>
+            <input id="current_skills" name="current_skills" value={form.current_skills} onChange={handleChange} />
+          </div>
+        </fieldset>
 
-        <div className="form-group">
-          <label htmlFor="career_goal">Career goal</label>
-          <textarea id="career_goal" name="career_goal" value={form.career_goal} onChange={handleChange} rows={2} />
-        </div>
+        <fieldset className="form-section">
+          <legend>Projects</legend>
+          <div className="form-group">
+            <label htmlFor="current_projects">Current projects (comma separated)</label>
+            <input id="current_projects" name="current_projects" value={form.current_projects} onChange={handleChange} />
+          </div>
+        </fieldset>
 
-        <div className="form-group">
-          <label htmlFor="target_roles">Target roles (comma separated)</label>
-          <input id="target_roles" name="target_roles" value={form.target_roles} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="interests">Interests (comma separated)</label>
-          <input id="interests" name="interests" value={form.interests} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="current_skills">Current skills (comma separated)</label>
-          <input id="current_skills" name="current_skills" value={form.current_skills} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="current_projects">Current projects (comma separated)</label>
-          <input id="current_projects" name="current_projects" value={form.current_projects} onChange={handleChange} />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="goals">Goals (comma separated)</label>
-          <input id="goals" name="goals" value={form.goals} onChange={handleChange} />
-        </div>
+        <fieldset className="form-section">
+          <legend>Goals</legend>
+          <div className="form-group">
+            <label htmlFor="goals">Goals (comma separated)</label>
+            <input id="goals" name="goals" value={form.goals} onChange={handleChange} />
+          </div>
+        </fieldset>
 
         <button type="submit" disabled={saving}>
           {saving ? 'Saving…' : 'Save Context'}

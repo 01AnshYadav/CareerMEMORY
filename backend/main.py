@@ -10,7 +10,7 @@ import json
 import requests
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 
 from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context
@@ -90,6 +90,11 @@ class MemoryListResponse(BaseModel):
     count: int
 
 
+def _clean_list(values: list[str]) -> list[str]:
+    """Trim whitespace and drop empty strings."""
+    return [v.strip() for v in values if v.strip()]
+
+
 class ContextRequest(BaseModel):
     name: str = ""
     current_role: str = ""
@@ -100,6 +105,24 @@ class ContextRequest(BaseModel):
     current_skills: list[str] = []
     current_projects: list[str] = []
     goals: list[str] = []
+
+    @field_validator("name", "current_role", "education", "career_goal", mode="before")
+    @classmethod
+    def _trim_str(cls, v: str) -> str:
+        return v.strip() if isinstance(v, str) else v
+
+    @field_validator(
+        "target_roles", "interests", "current_skills", "current_projects", "goals",
+        mode="before"
+    )
+    @classmethod
+    def _clean_lists(cls, v):
+        if isinstance(v, list):
+            return _clean_list(v)
+        if isinstance(v, str):
+            # support comma-separated string just in case
+            return _clean_list(v.split(","))
+        return v
 
 
 class ContextResponse(ContextRequest):
