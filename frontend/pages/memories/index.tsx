@@ -35,6 +35,8 @@ export default function MemoriesPage() {
         <Link href="/">Analyzer</Link>
         <span className="nav-sep">|</span>
         <Link href="/memories"><strong>Memories</strong></Link>
+        <span className="nav-sep">|</span>
+        <Link href="/context">Context</Link>
       </nav>
 
       <h1>CareerMemory</h1>

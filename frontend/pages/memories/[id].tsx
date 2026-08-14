@@ -60,6 +60,8 @@ export default function MemoryDetailPage() {
         <span className="nav-sep">|</span>
         <Link href="/memories">Memories</Link>
         <span className="nav-sep">|</span>
+        <Link href="/context">Context</Link>
+        <span className="nav-sep">|</span>
         <strong>{memory.title}</strong>
       </nav>
 

@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
-from db import init_db, create_memory, get_memory, list_memories, delete_memory
+from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -40,7 +40,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -88,6 +88,23 @@ class MemoryResponse(MemoryCreate):
 class MemoryListResponse(BaseModel):
     memories: list[MemoryResponse]
     count: int
+
+
+class ContextRequest(BaseModel):
+    name: str = ""
+    current_role: str = ""
+    education: str = ""
+    career_goal: str = ""
+    target_roles: list[str] = []
+    interests: list[str] = []
+    current_skills: list[str] = []
+    current_projects: list[str] = []
+    goals: list[str] = []
+
+
+class ContextResponse(ContextRequest):
+    created_at: str
+    updated_at: str
 
 
 # ----- System prompt (same contract as before) -----
@@ -230,6 +247,33 @@ async def delete_memory_endpoint(memory_id: int):
     if not deleted:
         raise HTTPException(status_code=404, detail="Memory not found")
     return {"ok": True, "deleted_id": memory_id}
+
+
+# ----- User Context API endpoints -----
+@app.get("/api/context", response_model=ContextResponse)
+async def get_context_endpoint():
+    """Get the current user context."""
+    ctx = get_context()
+    if not ctx:
+        raise HTTPException(status_code=404, detail="User context not found")
+    return ctx
+
+
+@app.put("/api/context", response_model=ContextResponse)
+async def upsert_context_endpoint(payload: ContextRequest):
+    """Create or update the user context."""
+    ctx = upsert_context(
+        name=payload.name,
+        current_role=payload.current_role,
+        education=payload.education,
+        career_goal=payload.career_goal,
+        target_roles=payload.target_roles,
+        interests=payload.interests,
+        current_skills=payload.current_skills,
+        current_projects=payload.current_projects,
+        goals=payload.goals,
+    )
+    return ctx
 
 
 # ----- Run with: uvicorn main:app --reload --port 8000 -----

@@ -96,6 +96,8 @@ export default function AnalyzeForm({}: Props) {
         <a href="/"><strong>Analyzer</strong></a>
         <span className="nav-sep">|</span>
         <a href="/memories">Memories</a>
+        <span className="nav-sep">|</span>
+        <a href="/context">Context</a>
       </nav>
 
       <h1>CareerMemory</h1>

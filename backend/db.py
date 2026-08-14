@@ -41,6 +41,22 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_context (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                name TEXT,
+                current_role TEXT,
+                education TEXT,
+                career_goal TEXT,
+                target_roles TEXT,
+                interests TEXT,
+                current_skills TEXT,
+                current_projects TEXT,
+                goals TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
         conn.commit()
     finally:
         conn.close()
@@ -134,3 +150,91 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     d["prerequisites"] = json.loads(d["prerequisites"])
     d["suggested_actions"] = json.loads(d["suggested_actions"])
     return d
+
+
+def _context_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
+    d = dict(row)
+    for field in ["target_roles", "interests", "current_skills", "current_projects", "goals"]:
+        val = d.get(field)
+        d[field] = json.loads(val) if val else []
+    return d
+
+
+def get_context() -> Optional[Dict[str, Any]]:
+    """Get the single user context row."""
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT * FROM user_context WHERE id = 1").fetchone()
+        if row:
+            return _context_row_to_dict(row)
+        return None
+    finally:
+        conn.close()
+
+
+def upsert_context(
+    name: str,
+    current_role: str,
+    education: str,
+    career_goal: str,
+    target_roles: List[str],
+    interests: List[str],
+    current_skills: List[str],
+    current_projects: List[str],
+    goals: List[str],
+) -> Dict[str, Any]:
+    """Create or update the user context (single row with id=1)."""
+    now = datetime.utcnow().isoformat() + "Z"
+    conn = get_connection()
+    try:
+        existing = conn.execute("SELECT id FROM user_context WHERE id = 1").fetchone()
+        if existing:
+            conn.execute(
+                """
+                UPDATE user_context SET
+                    name = ?, current_role = ?, education = ?, career_goal = ?,
+                    target_roles = ?, interests = ?, current_skills = ?,
+                    current_projects = ?, goals = ?, updated_at = ?
+                WHERE id = 1
+                """,
+                (
+                    name,
+                    current_role,
+                    education,
+                    career_goal,
+                    json.dumps(target_roles),
+                    json.dumps(interests),
+                    json.dumps(current_skills),
+                    json.dumps(current_projects),
+                    json.dumps(goals),
+                    now,
+                ),
+            )
+        else:
+            conn.execute(
+                """
+                INSERT INTO user_context (
+                    id, name, current_role, education, career_goal,
+                    target_roles, interests, current_skills, current_projects, goals,
+                    created_at, updated_at
+                ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    name,
+                    current_role,
+                    education,
+                    career_goal,
+                    json.dumps(target_roles),
+                    json.dumps(interests),
+                    json.dumps(current_skills),
+                    json.dumps(current_projects),
+                    json.dumps(goals),
+                    now,
+                    now,
+                ),
+            )
+        conn.commit()
+        row = conn.execute("SELECT * FROM user_context WHERE id = 1").fetchone()
+        return _context_row_to_dict(row)
+    finally:
+        conn.close()
