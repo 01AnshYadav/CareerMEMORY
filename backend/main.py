@@ -23,7 +23,7 @@ if not NVIDIA_API_KEY:
 # NVIDIA NIM (OpenAI‑compatible) endpoint
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 # A currently available NVIDIA‑hosted model good for structured text tasks
-NVIDIA_MODEL = "nvidia/llama-3.1-70b-instruct"
+NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 
 app = FastAPI(title="CareerMemory Backend", version="0.1.0")
 
@@ -65,7 +65,7 @@ SYSTEM_PROMPT = (
     "title (string), summary (string), category (string), topics (array of strings),\n"
     "importance (0‑100), current_relevance (0‑100), future_relevance (0‑100),\n"
     "prerequisites (array of strings), suggested_actions (array of strings).\n"
-    "Only output valid JSON – no extra commentary, no markdown fences."
+    "Return ONLY the JSON object. No extra commentary, no markdown fences."
 )
 
 
@@ -85,12 +85,19 @@ def call_nvidia(user_text: str) -> dict:
             {"role": "user", "content": user_text},
         ],
         "temperature": 0.2,
-        "max_tokens": 1024,
+        "max_tokens": 2048,
+        "response_format": {"type": "json_object"},
     }
 
     try:
-        resp = requests.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=30)
+        resp = requests.post(NVIDIA_API_URL, headers=headers, json=payload, timeout=60)
         resp.raise_for_status()
+    except requests.HTTPError as e:
+        # Include NVIDIA response body for debugging
+        detail = f"NVIDIA API request failed: {e}"
+        if resp is not None and resp.text:
+            detail += f" | NVIDIA response: {resp.text}"
+        raise HTTPException(status_code=502, detail=detail)
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=f"NVIDIA API request failed: {e}")
 
@@ -98,11 +105,30 @@ def call_nvidia(user_text: str) -> dict:
         data = resp.json()
         # NVIDIA follows OpenAI chat‑completion format
         content = data["choices"][0]["message"]["content"]
-        # The model is instructed to return pure JSON
-        parsed = json.loads(content)
+        # Robustly extract JSON: strip markdown fences and surrounding text
+        cleaned = content.strip()
+        # Remove markdown code fences if present
+        if cleaned.startswith("```"):
+            # Remove leading ```json or ```
+            lines = cleaned.splitlines()
+            # Drop first line if it starts with ```
+            if lines[0].startswith("```"):
+                lines = lines[1:]
+            # Drop last line if it ends with ```
+            if lines and lines[-1].startswith("```"):
+                lines = lines[:-1]
+            cleaned = "\n".join(lines).strip()
+        # Find first { and last }
+        first = cleaned.find("{")
+        last = cleaned.rfind("}")
+        if first != -1 and last != -1 and last > first:
+            cleaned = cleaned[first:last+1]
+        parsed = json.loads(cleaned)
         return parsed
     except (KeyError, json.JSONDecodeError, TypeError) as e:
-        raise HTTPException(status_code=500, detail=f"Failed to parse NVIDIA response: {e}")
+        # Include raw model output for debugging
+        raw = content if 'content' in locals() else "N/A"
+        raise HTTPException(status_code=500, detail=f"Failed to parse NVIDIA response: {e} | Raw response: {raw}")
 
 
 # ----- API endpoint -----
