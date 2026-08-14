@@ -132,6 +132,18 @@ def list_memories(limit: int = 50, offset: int = 0) -> List[Dict[str, Any]]:
         conn.close()
 
 
+def get_all_memories() -> List[Dict[str, Any]]:
+    """Return all memories, newest first (for ranking)."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM memories ORDER BY created_at DESC"
+        ).fetchall()
+        return [_row_to_dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
 def delete_memory(memory_id: int) -> bool:
     """Delete a memory by ID. Returns True if deleted."""
     conn = get_connection()

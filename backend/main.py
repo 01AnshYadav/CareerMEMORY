@@ -13,8 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 
-from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context
+from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context, get_all_memories
 from relevance import calculate_relevance
+from ranking import rank_memories
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -86,8 +87,24 @@ class MemoryResponse(MemoryCreate):
     updated_at: str
 
 
+class RelevanceResponse(BaseModel):
+    score: int
+    reasons: list[str]
+    signals: dict[str, float]
+
+
+class RankedMemoryResponse(MemoryResponse):
+    """Memory with relevance information for ranking endpoint."""
+    relevance: RelevanceResponse
+
+
 class MemoryListResponse(BaseModel):
     memories: list[MemoryResponse]
+    count: int
+
+
+class RankedMemoryListResponse(BaseModel):
+    memories: list[RankedMemoryResponse]
     count: int
 
 
@@ -129,12 +146,6 @@ class ContextRequest(BaseModel):
 class ContextResponse(ContextRequest):
     created_at: str
     updated_at: str
-
-
-class RelevanceResponse(BaseModel):
-    score: int
-    reasons: list[str]
-    signals: dict[str, float]
 
 
 # ----- System prompt (same contract as before) -----
@@ -259,6 +270,29 @@ async def list_memories_endpoint(limit: int = 50, offset: int = 0):
         offset = 0
     memories = list_memories(limit=limit, offset=offset)
     return {"memories": memories, "count": len(memories)}
+
+
+# ----- Relevance Ranking endpoint -----
+@app.get("/api/memories/relevant", response_model=RankedMemoryListResponse)
+async def get_relevant_memories(limit: int = 20, offset: int = 0):
+    """Return memories ranked by relevance to current user context."""
+    if limit > 100:
+        limit = 100
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+
+    context = get_context()
+    if not context:
+        raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
+
+    all_memories = get_all_memories()
+    ranked = rank_memories(all_memories, context)
+
+    # paginate after ranking
+    paginated = ranked[offset:offset + limit]
+    return {"memories": paginated, "count": len(paginated)}
 
 
 @app.get("/api/memories/{memory_id}", response_model=MemoryResponse)

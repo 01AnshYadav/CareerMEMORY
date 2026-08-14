@@ -10,6 +10,10 @@ export default function MemoriesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [relevantMemories, setRelevantMemories] = useState<Array<Memory & {relevance: {score:number; reasons:string[]}}>>([])
+  const [relevantLoading, setRelevantLoading] = useState(false)
+  const [relevantError, setRelevantError] = useState<string | null>(null)
+
   const fetchMemories = async () => {
     setLoading(true)
     setError(null)
@@ -25,8 +29,31 @@ export default function MemoriesPage() {
     }
   }
 
+  const fetchRelevant = async () => {
+    setRelevantLoading(true)
+    setRelevantError(null)
+    try {
+      const res = await fetch(`${API_BASE}/api/memories/relevant?limit=5`)
+      if (!res.ok) {
+        if (res.status === 400) {
+          // context missing – silently ignore
+          setRelevantMemories([])
+          return
+        }
+        throw new Error('Unable to load relevance')
+      }
+      const data = await res.json()
+      setRelevantMemories(data.memories || [])
+    } catch (err: any) {
+      setRelevantError(err.message)
+    } finally {
+      setRelevantLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchMemories()
+    fetchRelevant()
   }, [])
 
   return (
@@ -62,6 +89,27 @@ export default function MemoriesPage() {
           <p>Save your first piece of knowledge from the analyzer.</p>
           <Link href="/"><button>Go to Analyzer</button></Link>
         </div>
+      )}
+
+      {/* Most Relevant to You */}
+      {relevantMemories.length > 0 && (
+        <section className="relevant-section">
+          <h2>Most Relevant to You</h2>
+          {relevantLoading && <p>Calculating relevance…</p>}
+          {relevantError && <div className="error">{relevantError}</div>}
+          <div className="memory-grid">
+            {relevantMemories.map((mem) => (
+              <div key={mem.id} className="relevant-card">
+                <div className="card-header">
+                  <h3>{mem.title}</h3>
+                  <span className="relevance-score">Relevance: {mem.relevance.score}/100</span>
+                </div>
+                <p className="summary">{mem.summary}</p>
+                <div className="topics">Topics: {mem.topics.join(', ')}</div>
+              </div>
+            ))}
+          </div>
+        </section>
       )}
 
       {!loading && !error && memories.length > 0 && (
