@@ -13,6 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
+from db import init_db, create_memory, get_memory, list_memories, delete_memory
+
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
 
@@ -25,14 +27,20 @@ NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 # A currently available NVIDIA‑hosted model good for structured text tasks
 NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
 
-app = FastAPI(title="CareerMemory Backend", version="0.1.0")
+app = FastAPI(title="CareerMemory Backend", version="0.2.0")
+
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
 
 # ----- CORS -----
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
     allow_credentials=False,
-    allow_methods=["POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
 
@@ -54,6 +62,32 @@ class AnalyzeResponse(BaseModel):
     future_relevance: int = Field(..., ge=0, le=100)
     prerequisites: list[str]
     suggested_actions: list[str]
+
+
+class MemoryCreate(BaseModel):
+    """Request payload for creating a memory."""
+    original_text: str = Field(..., min_length=1)
+    title: str = Field(..., min_length=1)
+    summary: str = Field(..., min_length=1)
+    category: str = Field(..., min_length=1)
+    topics: list[str]
+    importance: int = Field(..., ge=0, le=100)
+    current_relevance: int = Field(..., ge=0, le=100)
+    future_relevance: int = Field(..., ge=0, le=100)
+    prerequisites: list[str]
+    suggested_actions: list[str]
+
+
+class MemoryResponse(MemoryCreate):
+    """Memory as stored in the database."""
+    id: int
+    created_at: str
+    updated_at: str
+
+
+class MemoryListResponse(BaseModel):
+    memories: list[MemoryResponse]
+    count: int
 
 
 # ----- System prompt (same contract as before) -----
@@ -143,6 +177,59 @@ async def analyze(request: AnalyzeRequest):
     structured = call_nvidia(request.content)
     # Pydantic will validate the dict matches AnalyzeResponse
     return structured
+
+
+# ----- Memory API endpoints -----
+@app.post("/api/memories", response_model=MemoryResponse, status_code=201)
+async def create_memory_endpoint(memory: MemoryCreate):
+    """Create a new memory entry."""
+    memory_id = create_memory(
+        original_text=memory.original_text,
+        title=memory.title,
+        summary=memory.summary,
+        category=memory.category,
+        topics=memory.topics,
+        importance=memory.importance,
+        current_relevance=memory.current_relevance,
+        future_relevance=memory.future_relevance,
+        prerequisites=memory.prerequisites,
+        suggested_actions=memory.suggested_actions,
+    )
+    created = get_memory(memory_id)
+    if not created:
+        raise HTTPException(status_code=500, detail="Failed to retrieve created memory")
+    return created
+
+
+@app.get("/api/memories", response_model=MemoryListResponse)
+async def list_memories_endpoint(limit: int = 50, offset: int = 0):
+    """List memories, newest first. Max limit 100."""
+    if limit > 100:
+        limit = 100
+    if limit < 1:
+        limit = 1
+    if offset < 0:
+        offset = 0
+    memories = list_memories(limit=limit, offset=offset)
+    return {"memories": memories, "count": len(memories)}
+
+
+@app.get("/api/memories/{memory_id}", response_model=MemoryResponse)
+async def get_memory_endpoint(memory_id: int):
+    """Get a single memory by ID."""
+    memory = get_memory(memory_id)
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return memory
+
+
+@app.delete("/api/memories/{memory_id}")
+async def delete_memory_endpoint(memory_id: int):
+    """Delete a memory by ID."""
+    deleted = delete_memory(memory_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return {"ok": True, "deleted_id": memory_id}
 
 
 # ----- Run with: uvicorn main:app --reload --port 8000 -----

@@ -7,7 +7,7 @@ body {
   color: #333;
 }
 .container {
-  max-width: 700px;
+  max-width: 900px;
   margin: 0 auto;
 }
 h1 { margin-bottom: 0.25rem; }
@@ -36,3 +36,65 @@ button:disabled { background: #99bfff; cursor: not-allowed; }
 .error { color: #d00; margin-top: 1rem; }
 .result { margin-top: 1.5rem; background: #fff; border: 1px solid #eee; padding: 1rem; border-radius: 4px; overflow-x: auto; }
 pre { margin: 0; white-space: pre-wrap; }
+
+/* Navigation */
+.nav {
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+}
+.nav a { color: #0070f3; text-decoration: none; margin-right: 0.5rem; }
+.nav a:hover { text-decoration: underline; }
+.nav-sep { color: #999; margin: 0 0.5rem; }
+
+/* Search placeholder */
+.search-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+.search-placeholder input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: #fff;
+  color: #999;
+}
+.search-note { color: #999; font-size: 0.85rem; }
+
+/* Memory cards */
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1rem;
+}
+.card-link { text-decoration: none; color: inherit; }
+.memory-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 1rem;
+  transition: box-shadow 0.2s;
+}
+.memory-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.card-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.5rem; }
+.card-header h3 { margin: 0; font-size: 1.1rem; }
+.category { font-size: 0.8rem; color: #0070f3; background: #e8f0fe; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.summary { margin: 0.5rem 0; color: #444; line-height: 1.4; }
+.topics { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
+.metrics { display: flex; gap: 1rem; font-size: 0.85rem; color: #555; margin-bottom: 0.5rem; }
+.metrics div { display: flex; flex-direction: column; }
+.date { font-size: 0.75rem; color: #999; }
+
+/* Empty state */
+.empty-state { text-align: center; padding: 3rem 1rem; color: #666; }
+.empty-state p { margin: 0.5rem 0; }
+.empty-state button { margin-top: 1rem; }
+
+/* Detail page */
+.detail-section { margin-top: 1.5rem; }
+.detail-section h3 { margin-bottom: 0.5rem; font-size: 1rem; color: #333; }
+.detail-section p { margin: 0; color: #444; line-height: 1.5; }
+.metrics { display: flex; gap: 2rem; }
+.metrics div { display: flex; flex-direction: column; }

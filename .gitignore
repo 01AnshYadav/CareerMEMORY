@@ -17,6 +17,7 @@ backend/__pycache__/
 *.pyc
 .venv/
 venv/
+backend/careermemory.db
 
 # IDE / OS
 .vscode/
