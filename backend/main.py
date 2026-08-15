@@ -17,6 +17,7 @@ from db import init_db, create_memory, get_memory, list_memories, delete_memory,
 from relevance import calculate_relevance
 from ranking import rank_memories
 from recommendations import generate_recommendations
+from actions import generate_actions
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -121,6 +122,19 @@ class RecommendationResponse(BaseModel):
 class RecommendationsListResponse(BaseModel):
     recommendations: list[RecommendationResponse]
     count: int
+
+
+class ActionResponse(BaseModel):
+    title: str
+    description: str
+    source_memory_id: int
+    priority: int
+    reason: str
+
+
+class ActionsListResponse(BaseModel):
+    memory_id: int
+    actions: list[ActionResponse]
 
 
 def _clean_list(values: list[str]) -> list[str]:
@@ -385,6 +399,21 @@ async def get_memory_relevance(memory_id: int):
         raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
     relevance = calculate_relevance(memory, context)
     return relevance
+
+
+# ----- Actions API endpoint -----
+@app.get("/api/memories/{memory_id}/actions", response_model=ActionsListResponse)
+async def get_memory_actions(memory_id: int):
+    """Generate actions for a memory based on its suggested_actions and relevance."""
+    memory = get_memory(memory_id)
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    context = get_context()
+    if not context:
+        raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
+    relevance = calculate_relevance(memory, context)
+    actions = generate_actions(memory, context, relevance)
+    return {"memory_id": memory_id, "actions": actions}
 
 
 # ----- Run with: uvicorn main:app --reload --port 8000 -----
