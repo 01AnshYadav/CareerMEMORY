@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context, get_all_memories
 from relevance import calculate_relevance
 from ranking import rank_memories
+from recommendations import generate_recommendations
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -105,6 +106,20 @@ class MemoryListResponse(BaseModel):
 
 class RankedMemoryListResponse(BaseModel):
     memories: list[RankedMemoryResponse]
+    count: int
+
+
+class RecommendationResponse(BaseModel):
+    memory_id: int
+    title: str
+    summary: str
+    relevance: int
+    reason: str
+    suggested_actions: list[str]
+
+
+class RecommendationsListResponse(BaseModel):
+    recommendations: list[RecommendationResponse]
     count: int
 
 
@@ -293,6 +308,24 @@ async def get_relevant_memories(limit: int = 20, offset: int = 0):
     # paginate after ranking
     paginated = ranked[offset:offset + limit]
     return {"memories": paginated, "count": len(paginated)}
+
+
+# ----- Recommendations endpoint -----
+@app.get("/api/recommendations", response_model=RecommendationsListResponse)
+async def get_recommendations(limit: int = 3):
+    """Return conservative recommendations based on relevance ranking."""
+    if limit > 5:
+        limit = 5
+    if limit < 1:
+        limit = 1
+
+    context = get_context()
+    if not context:
+        raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
+
+    all_memories = get_all_memories()
+    recs = generate_recommendations(all_memories, context, limit=limit)
+    return {"recommendations": recs, "count": len(recs)}
 
 
 @app.get("/api/memories/{memory_id}", response_model=MemoryResponse)
