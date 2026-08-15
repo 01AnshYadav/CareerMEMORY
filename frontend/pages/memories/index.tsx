@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import MemoryCard from '../../components/MemoryCard'
 import { Memory } from '../../components/AnalyzeForm'
+import ActionList from '../../components/ActionList'
+import { Action, ActionsResponse } from '../../types'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -13,6 +15,9 @@ export default function MemoriesPage() {
   const [relevantMemories, setRelevantMemories] = useState<Array<Memory & {relevance: {score:number; reasons:string[]}}>>([])
   const [relevantLoading, setRelevantLoading] = useState(false)
   const [relevantError, setRelevantError] = useState<string | null>(null)
+
+  // actions state per memory id
+  const [actionsState, setActionsState] = useState<Record<number, {actions: Action[]; loading: boolean; error: string | null; expanded: boolean}>>({})
 
   const fetchMemories = async () => {
     setLoading(true)
@@ -49,6 +54,42 @@ export default function MemoriesPage() {
     } finally {
       setRelevantLoading(false)
     }
+  }
+
+  const fetchActions = async (memoryId: number) => {
+    setActionsState(prev => ({
+      ...prev,
+      [memoryId]: { ...prev[memoryId], loading: true, error: null }
+    }))
+    try {
+      const res = await fetch(`${API_BASE}/api/memories/${memoryId}/actions`)
+      if (!res.ok) throw new Error('Unable to load actions')
+      const data: ActionsResponse = await res.json()
+      setActionsState(prev => ({
+        ...prev,
+        [memoryId]: { ...prev[memoryId], actions: data.actions || [], loading: false }
+      }))
+    } catch (err: any) {
+      setActionsState(prev => ({
+        ...prev,
+        [memoryId]: { ...prev[memoryId], error: err.message, loading: false }
+      }))
+    }
+  }
+
+  const toggleActions = (memoryId: number) => {
+    setActionsState(prev => {
+      const current = prev[memoryId] || { actions: [], loading: false, error: null, expanded: false }
+      const nextExpanded = !current.expanded
+      if (nextExpanded && current.actions.length === 0 && !current.loading) {
+        // fetch actions
+        setTimeout(() => fetchActions(memoryId), 0)
+      }
+      return {
+        ...prev,
+        [memoryId]: { ...current, expanded: nextExpanded }
+      }
+    })
   }
 
   useEffect(() => {
@@ -98,16 +139,34 @@ export default function MemoriesPage() {
           {relevantLoading && <p>Calculating relevance…</p>}
           {relevantError && <div className="error">{relevantError}</div>}
           <div className="memory-grid">
-            {relevantMemories.map((mem) => (
-              <div key={mem.id} className="relevant-card">
-                <div className="card-header">
-                  <h3>{mem.title}</h3>
-                  <span className="relevance-score">Relevance: {mem.relevance.score}/100</span>
+            {relevantMemories.map((mem) => {
+              const state = actionsState[mem.id] || { actions: [], loading: false, error: null, expanded: false }
+              return (
+                <div key={mem.id} className="relevant-card">
+                  <div className="card-header">
+                    <h3>{mem.title}</h3>
+                    <span className="relevance-score">Relevance: {mem.relevance.score}/100</span>
+                  </div>
+                  <p className="summary">{mem.summary}</p>
+                  <div className="topics">Topics: {mem.topics.join(', ')}</div>
+
+                  <button onClick={() => toggleActions(mem.id)} className="action-toggle">
+                    {state.expanded ? 'Hide next actions' : 'View next actions'}
+                  </button>
+
+                  {state.expanded && (
+                    <div className="actions-container">
+                      {state.loading && <p>Loading actions…</p>}
+                      {state.error && <div className="error">Could not load actions.</div>}
+                      <ActionList actions={state.actions} />
+                      {state.actions.length === 0 && !state.loading && !state.error && (
+                        <p className="empty-actions">No suggested actions for this memory.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
-                <p className="summary">{mem.summary}</p>
-                <div className="topics">Topics: {mem.topics.join(', ')}</div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       )}

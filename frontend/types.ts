@@ -23,3 +23,16 @@ export interface ContextFormData {
   current_projects: string;
   goals: string;
 }
+
+export interface Action {
+  title: string;
+  description: string;
+  source_memory_id: number;
+  priority: number;
+  reason: string;
+}
+
+export interface ActionsResponse {
+  memory_id: number;
+  actions: Action[];
+}

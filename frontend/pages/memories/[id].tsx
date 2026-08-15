@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Memory } from '../../components/AnalyzeForm'
+import ActionList from '../../components/ActionList'
+import { Action, ActionsResponse } from '../../types'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -10,6 +12,9 @@ export default function MemoryDetailPage() {
   const { id } = router.query
   const [memory, setMemory] = useState<Memory | null>(null)
   const [relevance, setRelevance] = useState<{score:number; reasons:string[]} | null>(null)
+  const [actions, setActions] = useState<Action[]>([])
+  const [actionsLoading, setActionsLoading] = useState(false)
+  const [actionsError, setActionsError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -30,10 +35,20 @@ export default function MemoryDetailPage() {
           const rel = await relRes.json()
           setRelevance({ score: rel.score, reasons: rel.reasons })
         }
+        // fetch actions
+        setActionsLoading(true)
+        const actRes = await fetch(`${API_BASE}/api/memories/${id}/actions`)
+        if (actRes.ok) {
+          const actData: ActionsResponse = await actRes.json()
+          setActions(actData.actions || [])
+        } else {
+          setActionsError('Could not load actions.')
+        }
       } catch (err: any) {
         setError(err.message)
       } finally {
         setLoading(false)
+        setActionsLoading(false)
       }
     }
     fetchMemory()
@@ -83,6 +98,16 @@ export default function MemoryDetailPage() {
           </ul>
         </div>
       )}
+
+      <div className="detail-section">
+        <h3>Next Actions</h3>
+        {actionsLoading && <p>Loading actions…</p>}
+        {actionsError && <div className="error">{actionsError}</div>}
+        <ActionList actions={actions} />
+        {actions.length === 0 && !actionsLoading && !actionsError && (
+          <p className="empty-actions">No suggested actions for this memory.</p>
+        )}
+      </div>
 
       <div className="detail-section">
         <h3>Original text</h3>
