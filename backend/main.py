@@ -18,6 +18,7 @@ from relevance import calculate_relevance
 from ranking import rank_memories
 from recommendations import generate_recommendations
 from actions import generate_actions
+from connections import find_connections
 
 # Load environment variables from .env (NVIDIA_API_KEY)
 load_dotenv()
@@ -135,6 +136,18 @@ class ActionResponse(BaseModel):
 class ActionsListResponse(BaseModel):
     memory_id: int
     actions: list[ActionResponse]
+
+
+class ConnectionResponse(BaseModel):
+    type: str
+    label: str
+    matched_value: str
+    reason: str
+
+
+class ConnectionsListResponse(BaseModel):
+    memory_id: int
+    connections: list[ConnectionResponse]
 
 
 def _clean_list(values: list[str]) -> list[str]:
@@ -414,6 +427,21 @@ async def get_memory_actions(memory_id: int):
     relevance = calculate_relevance(memory, context)
     actions = generate_actions(memory, context, relevance)
     return {"memory_id": memory_id, "actions": actions}
+
+
+# ----- Connections API endpoint -----
+@app.get("/api/memories/{memory_id}/connections", response_model=ConnectionsListResponse)
+async def get_memory_connections(memory_id: int):
+    """Explain how a memory connects to the current user context."""
+    memory = get_memory(memory_id)
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    context = get_context()
+    if not context:
+        raise HTTPException(status_code=400, detail="User context not found. Please create context first.")
+    relevance = calculate_relevance(memory, context)
+    connections = find_connections(memory, context, relevance)
+    return {"memory_id": memory_id, "connections": connections}
 
 
 # ----- Run with: uvicorn main:app --reload --port 8000 -----

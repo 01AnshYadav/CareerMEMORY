@@ -36,3 +36,15 @@ export interface ActionsResponse {
   memory_id: number;
   actions: Action[];
 }
+
+export interface Connection {
+  type: string;
+  label: string;
+  matched_value: string;
+  reason: string;
+}
+
+export interface ConnectionsResponse {
+  memory_id: number;
+  connections: Connection[];
+}
