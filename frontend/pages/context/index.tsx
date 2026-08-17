@@ -122,15 +122,17 @@ export default function ContextPage() {
         <Link href="/context"><strong>Context</strong></Link>
       </nav>
 
-      <h1>CareerMemory Context</h1>
-      <p className="description">Define your profile so future features can tailor recommendations.</p>
+      <h1 className="text-xl font-semibold tracking-tight text-charcoal">
+                CareerMEMORY
+              </h1>
+      <p className="text-sm text-muted/70 mb-4">Define your profile so future features can tailor recommendations.</p>
 
       {error && <div className="error">{error}</div>}
       {saved && <div className="success">Context saved successfully ✓</div>}
 
       <form onSubmit={handleSubmit}>
-        <fieldset className="form-section">
-          <legend>Identity</legend>
+        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
+          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Identity</legend>
           <div className="form-group">
             <label htmlFor="name">Name</label>
             <input id="name" name="name" value={form.name} onChange={handleChange} />
@@ -169,25 +171,25 @@ export default function ContextPage() {
           </div>
         </fieldset>
 
-        <fieldset className="form-section">
-          <legend>Projects</legend>
+        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
+          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Projects</legend>
           <div className="form-group">
             <label htmlFor="current_projects">Current projects (comma separated)</label>
             <input id="current_projects" name="current_projects" value={form.current_projects} onChange={handleChange} />
           </div>
         </fieldset>
 
-        <fieldset className="form-section">
-          <legend>Goals</legend>
+        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
+          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Goals</legend>
           <div className="form-group">
             <label htmlFor="goals">Goals (comma separated)</label>
             <input id="goals" name="goals" value={form.goals} onChange={handleChange} />
           </div>
         </fieldset>
 
-        <button type="submit" disabled={saving}>
-          {saving ? 'Saving…' : 'Save Context'}
-        </button>
+        <button type="submit" disabled={saving} className="btn-primary w-full text-sm font-medium px-4 py-2 rounded-md hover:bg-charcoal/10 transition-colors">
+                {saving ? 'Saving…' : 'Save Context'}
+              </button>
       </form>
     </div>
   )

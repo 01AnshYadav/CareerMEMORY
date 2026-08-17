@@ -3,95 +3,30 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom properties */
+/* Global defaults using CSS custom properties */
 :root {
   --cream: #FBFBF9;
-  --warm-grey: #E3E0D6;
-  --alabaster: #F4F2EC;
   --charcoal: #1A1A18;
-  --light-charcoal: #333330;
   --muted: #787774;
 }
 
-/* Base resets using custom properties */
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  margin: 0;
-  padding: 0;
   background: var(--cream);
   color: var(--charcoal);
+  margin: 0;
+  padding: 0;
 }
 
-/* Container */
-.max-w-6xl {
-  max-width: 72rem;
-  margin: 0 auto;
+/* Ensure bg-cream and text-charcoal work as Tailwind utilities */
+.bg-cream {
+  background-color: var(--cream);
 }
 
-/* 2-column layout */
-.grid-dashboard {
-  display: grid;
-  grid-template-columns: 65% 35%;
-  gap: 2rem;
-}
-
-/* Header navigation */
-.navbar {
-  @apply flex items-center justify-between py-3 border-t;
-}
-
-.brand-title {
-  @apply text-xs uppercase tracking-[0.25em] font-light;
-}
-
-.brand-title span {
+.text-charcoal {
   color: var(--charcoal);
 }
 
-/* NAV TABS */
-.nav-tabs {
-  @apply flex gap-2;
+.text-muted {
+  color: var(--muted);
 }
-
-.nav-tab {
-  @apply text-sm text-gray-500 border-b-2 border-transparent hover:text-gray-700 hover:border-gray-700 py-1 px-2 transition-colors;
-}
-
-.nav-tab.active {
-  @apply text-gray-700 border-gray-700;
-}
-
-/* Analyzer panel */
-.analyzer-heading {
-  @apply tracking-wide font-normal text-xl mb-4;
-}
-
-.textarea {
-  @apply w-full bg-gray-50 border border-gray-200 rounded-md p-4 focus:border-[#1A1A18] focus:outline-none transition-colors;
-}
-
-/* Character footer */
-.char-count {
-  @apply font-mono text-[11px] text-gray-400 tracking-wider;
-}
-
-.action-btn {
-  @apply bg-[#1A1A18] text-white px-5 py-2 rounded-md text-xs font-mono uppercase tracking-widest hover:bg-[#333330] transition-colors;
-}
-
-/* Side context panel */
-.side-panel {
-  @apply bg-white border border-gray-200 rounded-md p-5 shadow-sm;
-}
-
-.section-label {
-  @apply text-[10px] uppercase tracking-widest text-gray-400 mb-4;
-}
-
-.card-item {
-  @apply mb-2 last:mb-0 border-b border-gray-200 pb-2;
-}
-
-/* General utility classes */
-.tracking-wider { letter-spacing: 0.05em; }
-.tracking-widest { letter-spacing: 0.2em; }

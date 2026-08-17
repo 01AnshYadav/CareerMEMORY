@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import { Memory } from '../../components/AnalyzeForm'
-import ActionList from '../../components/ActionList'
-import { Action, ActionsResponse } from '../../types'
+import type { Action } from '../../types'
 
 const API_BASE = 'http://localhost:8000'
 
@@ -39,7 +38,7 @@ export default function MemoryDetailPage() {
         setActionsLoading(true)
         const actRes = await fetch(`${API_BASE}/api/memories/${id}/actions`)
         if (actRes.ok) {
-          const actData: ActionsResponse = await actRes.json()
+          const actData = await actRes.json()
           setActions(actData.actions || [])
         } else {
           setActionsError('Could not load actions.')
@@ -60,6 +59,7 @@ export default function MemoryDetailPage() {
     try {
       const res = await fetch(`${API_BASE}/api/memories/${id}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Failed to delete')
+      const router = useRouter()
       router.push('/memories')
     } catch (err: any) {
       alert(err.message)
@@ -68,84 +68,152 @@ export default function MemoryDetailPage() {
     }
   }
 
-  if (loading) return <div className="container">Loading memory...</div>
-  if (error) return <div className="container"><div className="error">{error}</div><Link href="/memories"><button>Back to Memories</button></Link></div>
-  if (!memory) return <div className="container">Memory not found</div>
+  if (loading) return <div className="min-h-screen bg-cream flex items-center justify-center">Loading memory...</div>
+  if (error) return <div className="min-h-screen bg-cream flex items-center justify-center p-4 text-error text-charcoal">Error: {error}</div>
+  if (!memory) return <div className="min-h-screen bg-cream">Memory not found</div>
 
-  const date = new Date(memory.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-  const updated = new Date(memory.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const date = new Date(memory.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+  const updated = new Date(memory.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 
   return (
-    <div className="container">
-      <nav className="nav">
-        <Link href="/">Analyzer</Link>
-        <span className="nav-sep">|</span>
-        <Link href="/memories">Memories</Link>
-        <span className="nav-sep">|</span>
-        <Link href="/context">Context</Link>
-        <span className="nav-sep">|</span>
-        <strong>{memory.title}</strong>
-      </nav>
-
-      <h1>{memory.title}</h1>
-      <p className="description">Category: {memory.category} • Created {date} • Updated {updated}</p>
-
-      {relevance && (
-        <div className="relevance-box">
-          <strong>Relevance: {relevance.score}/100</strong>
-          <ul>
-            {relevance.reasons.map((r, i) => <li key={i}>{r}</li>)}
-          </ul>
+    <div className="min-h-screen bg-cream">
+      {/* Header */}
+      <header className="border-b border-muted/50">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-semibold tracking-tight text-charcoal">
+            CareerMEMORY
+          </h1>
+          <nav className="flex gap-4 text-sm text-muted">
+            <a href="/" className="hover:text-charcoal transition-colors">Analyzer</a>
+            <a href="/memories" className="hover:text-charcoal transition-colors border-b-2 border-charcoal active">Memories</a>
+            <a href="/context" className="hover:text-charcoal transition-colors">Context</a>
+          </nav>
         </div>
-      )}
+      </header>
 
-      <div className="detail-section">
-        <h3>Next Actions</h3>
-        {actionsLoading && <p>Loading actions…</p>}
-        {actionsError && <div className="error">{actionsError}</div>}
-        <ActionList actions={actions} />
-        {actions.length === 0 && !actionsLoading && !actionsError && (
-          <p className="empty-actions">No suggested actions for this memory.</p>
+      <main className="max-w-6xl mx-auto px-4 py-6">
+
+        <div className="rounded-md bg-white p-6 shadow-sm mb-8">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <h3 className="text-lg font-medium text-charcoal mb-2">Overview</h3>
+              <p className="text-charcoal">{memory.title}</p>
+              <p className="text-sm text-muted/70">{memory.category}</p>
+              <p className="text-sm text-muted/70">Created {date} • Updated {updated}</p>
+            </div>
+            <div>
+              {relevance && (
+                <div>
+                  <p className="text-sm text-muted/70">Relevance</p>
+                  <p className="text-3xl font-medium text-charcoal">{relevance.score}/100</p>
+                  {relevance.reasons && relevance.reasons.length > 0 && (
+                    <ul className="mt-2 space-y-1 text-sm text-muted/80">
+                      {relevance.reasons.map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Next Actions */}
+        {actions.length > 0 && (
+          <div className="rounded-md bg-white p-6 shadow-sm mb-8">
+            <h3 className="text-lg font-medium text-charcoal mb-4">Next Actions</h3>
+            <ul className="space-y-3 text-sm text-charcoal">
+              {actions.map((action, i) => (
+                <li key={i}>
+                  <div className="flex items-start gap-3">
+                    <span className="bg-charcoal/10 text-charcoal rounded-md p-1.5 text-xs font-medium">#{i + 1}</span>
+                    <div>
+                      <h4 className="font-medium">{action.title}</h4>
+                      <p className="text-muted/70">{action.reason}</p>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
-      </div>
 
-      <div className="detail-section">
-        <h3>Original text</h3>
-        <p>{memory.original_text}</p>
-      </div>
+        {/* Original text */}
+        {memory.original_text && (
+          <div className="rounded-md bg-white p-6 shadow-sm mb-8">
+            <h3 className="text-lg font-medium text-charcoal mb-3">Original Text</h3>
+            <p className="text-muted/80 break-all">{memory.original_text}</p>
+          </div>
+        )}
 
-      <div className="detail-section">
-        <h3>Summary</h3>
-        <p>{memory.summary}</p>
-      </div>
+        {/* Summary */}
+        {memory.summary && (
+          <div className="rounded-md bg-white p-6 shadow-sm mb-8">
+            <h3 className="text-lg font-medium text-charcoal mb-3">Summary</h3>
+            <p className="text-charcoal">{memory.summary}</p>
+          </div>
+        )}
 
-      <div className="detail-section">
-        <h3>Topics</h3>
-        <p>{memory.topics.join(', ')}</p>
-      </div>
+        {/* Topics */}
+        {memory.topics && memory.topics.length > 0 && (
+          <div className="rounded-md bg-white p-6 shadow-sm mb-8">
+            <h3 className="text-lg font-medium text-charcoal mb-3">Topics</h3>
+            <div className="flex flex-wrap gap-2">
+              {memory.topics.map((t, i) => (
+                <span key={i} className="text-sm text-charcoal/80 rounded-full px-2 py-0.5 bg-charcoal/5">
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
-      <div className="detail-section metrics">
-        <div><strong>Importance</strong> {memory.importance}</div>
-        <div><strong>Current relevance</strong> {memory.current_relevance}</div>
-        <div><strong>Future relevance</strong> {memory.future_relevance}</div>
-      </div>
+        {/* Metrics */}
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div>
+            <p className="text-xs text-muted/70">Importance</p>
+            <p className="text-2xl font-medium text-charcoal">{memory.importance}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted/70">Current Relevance</p>
+            <p className="text-2xl font-medium text-charcoal">{memory.current_relevance}</p>
+          </div>
+          <div>
+            <p className="text-xs text-muted/70">Future Relevance</p>
+            <p className="text-2xl font-medium text-charcoal">{memory.future_relevance}</p>
+          </div>
+        </div>
 
-      <div className="detail-section">
-        <h3>Prerequisites</h3>
-        <p>{memory.prerequisites.join(', ') || '—'}</p>
-      </div>
+        {/* Prerequisites */}
+        {memory.prerequisites && memory.prerequisites.length > 0 && (
+          <div className="rounded-md bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-medium text-charcoal mb-3">Prerequisites</h3>
+            <p className="text-charcoal">{memory.prerequisites.join(', ') || '—'}</p>
+          </div>
+        )}
 
-      <div className="detail-section">
-        <h3>Suggested actions</h3>
-        <p>{memory.suggested_actions.join(', ') || '—'}</p>
-      </div>
+        {/* Suggested Actions */}
+        {memory.suggested_actions && memory.suggested_actions.length > 0 && (
+          <div className="rounded-md bg-white p-6 shadow-sm">
+            <h3 className="text-lg font-medium text-charcoal mb-3">Suggested Actions</h3>
+            <p className="text-charcoal">{memory.suggested_actions.join(', ') || '—'}</p>
+          </div>
+        )}
 
-      <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
-        <Link href="/memories"><button>Back to Memories</button></Link>
-        <button onClick={handleDelete} disabled={deleting} style={{ background: '#d00' }}>
-          {deleting ? 'Deleting…' : 'Delete Memory'}
-        </button>
-      </div>
+        {/* Delete button */}
+        <div className="mt-8 pt-8 border-t border-muted/50">
+          <Link href="/memories" className="btn-link text-sm text-charcoal hover:text-charcoal/90 transition-colors">
+            ← Back to Memories
+          </Link>
+          <button
+            onClick={handleDelete}
+            className="btn-danger text-sm font-medium mt-3 px-4 py-2 rounded-md hover:bg-charcoal/10 transition-colors"
+          >
+            {deleting ? 'Deleting…' : 'Delete Memory'}
+          </button>
+        </div>
+      </main>
     </div>
   )
 }

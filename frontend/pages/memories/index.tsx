@@ -82,7 +82,6 @@ export default function MemoriesPage() {
       const current = prev[memoryId] || { actions: [], loading: false, error: null, expanded: false }
       const nextExpanded = !current.expanded
       if (nextExpanded && current.actions.length === 0 && !current.loading) {
-        // fetch actions
         setTimeout(() => fetchActions(memoryId), 0)
       }
       return {
@@ -92,118 +91,86 @@ export default function MemoriesPage() {
     })
   }
 
-  const [analyzerText, setAnalyzerText] = useState('')
-
   useEffect(() => {
     fetchMemories()
     fetchRelevant()
   }, [])
 
   return (
-    <div className="min-h-screen bg-cream font-sans">
-      <nav className="navbar border-b border-[#E3E0D6]">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="brand-title font-light text-sm uppercase tracking-[0.25em]">
-            CareerMemory
-          </Link>
-          <div className="nav-tabs flex gap-2">
-            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">analyzer</div>
-            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">memories</div>
-            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">context</div>
-          </div>
+    <div className="min-h-screen bg-cream">
+      {/* Header */}
+      <header className="border-b border-muted/50">
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+          <h1 className="text-xl font-semibold tracking-tight text-charcoal">
+            CareerMEMORY
+          </h1>
+          <nav className="flex gap-4 text-sm text-muted">
+            <a href="/" className="hover:text-charcoal transition-colors">Analyzer</a>
+            <a href="/memories" className="hover:text-charcoal transition-colors border-b-2 border-charcoal active">Memories</a>
+            <a href="/context" className="hover:text-charcoal transition-colors">Context</a>
+          </nav>
         </div>
-      </nav>
+      </header>
 
-      <main className="container mx-auto py-6">
-        <div className="grid-dashboard gap-6">
+      <main className="max-w-6xl mx-auto px-4 py-6">
 
-          {/* Left Column: Analyzer */}
-          <div className="space-y-6">
-            <h2 className="text-xl font-normal tracking-wide text-[#1A1A18] mb-1">
-              Capture Knowledge
-            </h2>
-            <p className="text-xs text-[#787774] mb-4">
-              Paste raw notes, achievements, or feedback. AI will structure and link them.
-            </p>
+        {/* Analyzer Panel */}
+        <div className="mb-8">
+          <h2 className="text-xl font-normal tracking-wide text-charcoal mb-2">
+            Capture Knowledge
+          </h2>
+          <p className="text-xs text-muted/70 mb-4">
+            Paste raw notes, achievements, or feedback. AI will structure and link them.
+          </p>
 
-            <div>
-              <textarea
-                placeholder="Enter text to analyze for career memory..."
-                className="textarea w-full bg-[#F4F2EC] border border-[#E3E0D6] rounded-md p-4 text-sm text-[#1A1A18] focus:outline-none focus:border-[#1A1A18] h-44 resize-none"
-                value={analyzerText}
-                onChange={(e) => setAnalyzerText(e.target.value)}
-              />
-              <div className="flex items-center justify-between mt-3">
-                <span className="char-count font-mono text-[11px] text-[#787774]">
-                  {analyzerText.length}/1000
-                </span>
-                <button className="action-btn bg-[#1A1A18] hover:bg-[#333330] text-white px-5 py-2 rounded-md text-xs font-mono uppercase tracking-widest">
-                  Analyze
-                </button>
-              </div>
+          <div>
+            <textarea
+              placeholder="Enter text to analyze for career memory..."
+              className="w-full bg-alabaster border border-muted rounded-md p-3 text-sm text-charcoal focus:outline-none focus:border-charcoal h-32 resize-none"
+            />
+            <div className="flex items-center justify-between mt-3">
+              <span className="text-xs text-muted/60">0/1000</span>
+              <button className="btn-primary text-sm font-medium px-4 py-2 rounded-md hover:bg-charcoal/10 transition-colors">
+                Analyze
+              </button>
             </div>
           </div>
+        </div>
 
-          {/* Right Column: Context Preview Panel */}
-          <div>
-            <div className="side-panel border border-[#E3E0D6] rounded-md p-5 shadow-sm">
-              <div className="font-mono text-[10px] tracking-widest text-[#787774] mb-3">
-                RECENT CONTEXT
-              </div>
-              <div className="space-y-2 text-sm text-[#1A1A18]">
-                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
-                  <span className="font-medium">Python</span> — Core skill
-                </div>
-                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
-                  <span className="font-medium">FastAPI</span> — Backend framework
-                </div>
-                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
-                  <span className="font-medium">Docker</span> — Containerization
-                </div>
-              </div>
+        {/* Context Preview Panel */}
+        <div className="rounded-md bg-white/50 backdrop-blur-sm p-4 mb-8">
+          <p className="text-xs uppercase tracking-widest text-muted/60 mb-3">RECENT CONTEXT</p>
+          <div className="space-y-2 text-sm text-charcoal">
+            <div className="py-1 border-y border-muted/50">
+              <span className="font-medium">Python</span> — Core skill
+            </div>
+            <div className="py-1 border-y border-muted/50">
+              <span className="font-medium">FastAPI</span> — Backend framework
+            </div>
+            <div className="py-1 border-y border-muted/50">
+              <span className="font-medium">Docker</span> — Containerization
             </div>
           </div>
-
-          {/* Memories grid */}
-          <div>
-            <section className="relevant-section">
-              <h2 className="text-lg font-medium text-[#1A1A18] mb-4">Most Relevant to You</h2>
-              {relevantLoading && <p>Calculating relevance…</p>}
-              {relevantError && <div className="error">{relevantError}</div>}
-              <div className="memory-grid">
-                {relevantMemories.map((mem) => {
-                  const state = actionsState[mem.id] || { actions: [], loading: false, error: null, expanded: false }
-                  return (
-                    <div key={mem.id} className="relevant-card border border-[#E3E0D6] rounded-md p-4">
-                      <div className="card-header justify-between items-baseline mb-3">
-                        <h3 className="text-base font-semibold">{mem.title}</h3>
-                        <span className="relevance-score text-sm">Relevance: {mem.relevance.score}/100</span>
-                      </div>
-                      <p className="summary text-sm text-[#444] line-height-1.4">{mem.summary}</p>
-                      <div className="topics text-xs text-[#666] mb-3">Topics: {mem.topics.join(', ')}</div>
-
-                      <button onClick={() => toggleActions(mem.id)} className="action-toggle text-sm hover:text-[#1A1A18]">
-                        {state.expanded ? 'Hide next actions' : 'View next actions'}
-                      </button>
-
-                      {state.expanded && (
-                        <div className="actions-container mt-3">
-                          {state.loading && <p>Loading actions…</p>}
-                          {state.error && <div className="error">Could not load actions.</div>}
-                          <ActionList actions={state.actions} />
-                          {state.actions.length === 0 && !state.loading && !state.error && (
-                            <p className="empty-actions text-xs text-[#999] margin-0">No suggested actions for this memory.</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            </section>
-          </div>
-
         </div>
+
+        {/* Memories Section */}
+        <section className="py-8">
+          {relevantMemories.length === 0 && !relevantLoading && !relevantError && (
+            <p className="text-muted/60">No memories found. Analyze some text to get started.</p>
+          )}
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {relevantMemories.map((mem) => {
+              const state = actionsState[mem.id] || { actions: [], loading: false, error: null, expanded: false }
+              return (
+                <MemoryCard
+                  key={mem.id}
+                  memory={mem}
+                />
+              )
+            })}
+          </div>
+        </section>
       </main>
     </div>
   )
