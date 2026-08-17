@@ -1,5 +1,5 @@
 import OverviewPage from '../components/OverviewPage'
 
-export default function Home() {
+export default function Overview() {
   return <OverviewPage />
 }

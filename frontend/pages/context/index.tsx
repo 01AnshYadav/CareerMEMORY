@@ -1,17 +1,60 @@
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { UserContext, ContextFormData } from '../../types'
+import { ContextFormData } from '../../types'
 
-const API_BASE = 'http://localhost:8000'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+const inputClasses =
+  'w-full rounded border border-border bg-background px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus-ring'
+
+function splitList(value: string): string[] {
+  return value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+function Field({
+  id,
+  label,
+  value,
+  onChange,
+  textarea,
+  last,
+}: {
+  id: string
+  label: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void
+  textarea?: boolean
+  last?: boolean
+}) {
+  return (
+    <div className={last ? '' : 'mb-4'}>
+      <label htmlFor={id} className="mb-1.5 block text-sm text-ink-secondary">
+        {label}
+      </label>
+      {textarea ? (
+        <textarea
+          id={id}
+          name={id}
+          rows={2}
+          value={value}
+          onChange={onChange}
+          className={`${inputClasses} resize-y`}
+        />
+      ) : (
+        <input id={id} name={id} value={value} onChange={onChange} className={inputClasses} />
+      )}
+    </div>
+  )
+}
 
 export default function ContextPage() {
-  const [ctx, setCtx] = useState<UserContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
-  // form state as comma-separated strings
   const [form, setForm] = useState<ContextFormData>({
     name: '',
     current_role: '',
@@ -31,8 +74,6 @@ export default function ContextPage() {
       const res = await fetch(`${API_BASE}/api/context`)
       if (res.ok) {
         const data = await res.json()
-        setCtx(data)
-        // populate form
         setForm({
           name: data.name || '',
           current_role: data.current_role || '',
@@ -45,8 +86,7 @@ export default function ContextPage() {
           goals: (data.goals || []).join(', '),
         })
       } else if (res.status === 404) {
-        // no context yet
-        setCtx(null)
+        // no context yet — leave the form empty
       } else {
         throw new Error('Unable to load context')
       }
@@ -63,7 +103,7 @@ export default function ContextPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+    setForm((prev) => ({ ...prev, [name]: value }))
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -77,11 +117,11 @@ export default function ContextPage() {
         current_role: form.current_role,
         education: form.education,
         career_goal: form.career_goal,
-        target_roles: form.target_roles.split(',').map(s => s.trim()).filter(Boolean),
-        interests: form.interests.split(',').map(s => s.trim()).filter(Boolean),
-        current_skills: form.current_skills.split(',').map(s => s.trim()).filter(Boolean),
-        current_projects: form.current_projects.split(',').map(s => s.trim()).filter(Boolean),
-        goals: form.goals.split(',').map(s => s.trim()).filter(Boolean),
+        target_roles: splitList(form.target_roles),
+        interests: splitList(form.interests),
+        current_skills: splitList(form.current_skills),
+        current_projects: splitList(form.current_projects),
+        goals: splitList(form.goals),
       }
       const res = await fetch(`${API_BASE}/api/context`, {
         method: 'PUT',
@@ -90,7 +130,6 @@ export default function ContextPage() {
       })
       if (!res.ok) throw new Error('Failed to save context')
       const data = await res.json()
-      setCtx(data)
       setForm({
         name: data.name || '',
         current_role: data.current_role || '',
@@ -110,86 +149,93 @@ export default function ContextPage() {
     }
   }
 
-  if (loading) return <div className="container">Loading context...</div>
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-24 text-center">
+        <div className="h-6 w-6 animate-spin rounded border-2 border-border border-t-accent" />
+        <p className="text-sm text-ink-secondary">Loading context…</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-24 text-center">
+        <p className="text-sm text-ink-secondary">Unable to load context.</p>
+        <button
+          type="button"
+          onClick={fetchContext}
+          className="rounded border border-border bg-surface px-3 py-1.5 text-sm text-ink-primary focus-ring hover:bg-background"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
 
   return (
-    <div className="container">
-      <nav className="nav">
-        <Link href="/">Analyzer</Link>
-        <span className="nav-sep">|</span>
-        <Link href="/memories">Memories</Link>
-        <span className="nav-sep">|</span>
-        <Link href="/context"><strong>Context</strong></Link>
-      </nav>
+    <div className="mx-auto w-full max-w-2xl">
+      <header className="mb-8">
+        <h1 className="text-2xl font-medium tracking-tight text-ink-primary">Context</h1>
+        <p className="mt-1 text-sm text-ink-secondary">
+          The facts about your career that shape how everything else reads.
+        </p>
+      </header>
 
-      <h1 className="text-xl font-semibold tracking-tight text-charcoal">
-                CareerMEMORY
-              </h1>
-      <p className="text-sm text-muted/70 mb-4">Define your profile so future features can tailor recommendations.</p>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <section className="rounded border border-border bg-surface p-6">
+          <h2 className="mb-4 text-sm font-medium text-ink-primary">About you</h2>
+          <Field id="name" label="Name" value={form.name} onChange={handleChange} />
+          <Field id="current_role" label="Current role" value={form.current_role} onChange={handleChange} />
+          <Field id="education" label="Education" value={form.education} onChange={handleChange} last />
+        </section>
 
-      {error && <div className="error">{error}</div>}
-      {saved && <div className="success">Context saved successfully ✓</div>}
+        <section className="rounded border border-border bg-surface p-6">
+          <h2 className="mb-4 text-sm font-medium text-ink-primary">Career goals</h2>
+          <Field id="career_goal" label="Career goal" value={form.career_goal} onChange={handleChange} textarea />
+          <Field
+            id="target_roles"
+            label="Target roles (comma separated)"
+            value={form.target_roles}
+            onChange={handleChange}
+            last
+          />
+        </section>
 
-      <form onSubmit={handleSubmit}>
-        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
-          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Identity</legend>
-          <div className="form-group">
-            <label htmlFor="name">Name</label>
-            <input id="name" name="name" value={form.name} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="current_role">Current role</label>
-            <input id="current_role" name="current_role" value={form.current_role} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="education">Education</label>
-            <input id="education" name="education" value={form.education} onChange={handleChange} />
-          </div>
-        </fieldset>
+        <section className="rounded border border-border bg-surface p-6">
+          <h2 className="mb-4 text-sm font-medium text-ink-primary">Skills &amp; projects</h2>
+          <Field id="interests" label="Interests (comma separated)" value={form.interests} onChange={handleChange} />
+          <Field id="current_skills" label="Current skills (comma separated)" value={form.current_skills} onChange={handleChange} />
+          <Field
+            id="current_projects"
+            label="Current projects (comma separated)"
+            value={form.current_projects}
+            onChange={handleChange}
+            last
+          />
+        </section>
 
-        <fieldset className="form-section">
-          <legend>Career</legend>
-          <div className="form-group">
-            <label htmlFor="career_goal">Career goal</label>
-            <textarea id="career_goal" name="career_goal" value={form.career_goal} onChange={handleChange} rows={2} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="target_roles">Target roles (comma separated)</label>
-            <input id="target_roles" name="target_roles" value={form.target_roles} onChange={handleChange} />
-          </div>
-        </fieldset>
+        <section className="rounded border border-border bg-surface p-6">
+          <h2 className="mb-4 text-sm font-medium text-ink-primary">Goals</h2>
+          <Field id="goals" label="Goals (comma separated)" value={form.goals} onChange={handleChange} last />
+        </section>
 
-        <fieldset className="form-section">
-          <legend>Skills & Interests</legend>
-          <div className="form-group">
-            <label htmlFor="interests">Interests (comma separated)</label>
-            <input id="interests" name="interests" value={form.interests} onChange={handleChange} />
-          </div>
-          <div className="form-group">
-            <label htmlFor="current_skills">Current skills (comma separated)</label>
-            <input id="current_skills" name="current_skills" value={form.current_skills} onChange={handleChange} />
-          </div>
-        </fieldset>
-
-        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
-          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Projects</legend>
-          <div className="form-group">
-            <label htmlFor="current_projects">Current projects (comma separated)</label>
-            <input id="current_projects" name="current_projects" value={form.current_projects} onChange={handleChange} />
-          </div>
-        </fieldset>
-
-        <fieldset className="rounded-md p-4 mb-8 border-muted/50">
-          <legend className="text-sm font-medium text-muted/70 uppercase tracking-wider">Goals</legend>
-          <div className="form-group">
-            <label htmlFor="goals">Goals (comma separated)</label>
-            <input id="goals" name="goals" value={form.goals} onChange={handleChange} />
-          </div>
-        </fieldset>
-
-        <button type="submit" disabled={saving} className="btn-primary w-full text-sm font-medium px-4 py-2 rounded-md hover:bg-charcoal/10 transition-colors">
-                {saving ? 'Saving…' : 'Save Context'}
-              </button>
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <p className="text-sm">
+            {error ? (
+              <span className="text-ink-secondary">{error}</span>
+            ) : saved ? (
+              <span className="text-accent">Context saved.</span>
+            ) : null}
+          </p>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded bg-accent px-4 py-2 text-sm font-medium text-white focus-ring transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save Context'}
+          </button>
+        </div>
       </form>
     </div>
   )

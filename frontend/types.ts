@@ -1,3 +1,19 @@
+export interface Memory {
+  id: number;
+  original_text: string;
+  title: string;
+  summary: string;
+  category: string;
+  topics: string[];
+  importance: number;
+  current_relevance: number;
+  future_relevance: number;
+  prerequisites: string[];
+  suggested_actions: string[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface UserContext {
   name: string;
   current_role: string;

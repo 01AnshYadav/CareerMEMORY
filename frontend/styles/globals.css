@@ -1,32 +1,35 @@
-/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global defaults using CSS custom properties */
-:root {
-  --cream: #FBFBF9;
-  --charcoal: #1A1A18;
-  --muted: #787774;
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  body {
+    @apply bg-background font-sans text-ink-primary;
+  }
+
+  ::selection {
+    @apply bg-accent-soft text-accent;
+  }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--cream);
-  color: var(--charcoal);
-  margin: 0;
-  padding: 0;
-}
+@layer components {
+  .tag {
+    @apply inline-flex items-center rounded-sm bg-accent-soft px-2 py-0.5 text-xs font-medium leading-none text-accent;
+  }
 
-/* Ensure bg-cream and text-charcoal work as Tailwind utilities */
-.bg-cream {
-  background-color: var(--cream);
-}
+  .card {
+    @apply rounded border border-border bg-surface;
+  }
 
-.text-charcoal {
-  color: var(--charcoal);
-}
+  .focus-ring {
+    @apply outline-none;
+  }
 
-.text-muted {
-  color: var(--muted);
+  .focus-ring:focus-visible {
+    @apply ring-2 ring-accent ring-offset-2 ring-offset-background;
+  }
 }
