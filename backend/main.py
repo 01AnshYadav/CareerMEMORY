@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 from dotenv import load_dotenv
 
-from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context, get_all_memories
+from db import init_db, create_memory, get_memory, list_memories, delete_memory, get_context, upsert_context, get_all_memories, create_action, get_actions, get_action, update_action_status
 from relevance import calculate_relevance
 from ranking import rank_memories
 from recommendations import generate_recommendations
@@ -123,6 +123,10 @@ class RecommendationResponse(BaseModel):
 class RecommendationsListResponse(BaseModel):
     recommendations: list[RecommendationResponse]
     count: int
+
+
+class ActionStatusUpdate(BaseModel):
+    status: str = Field(..., description="Status of the action: pending, in_progress, completed, or dismissed")
 
 
 class ActionResponse(BaseModel):
@@ -427,6 +431,54 @@ async def get_memory_actions(memory_id: int):
     relevance = calculate_relevance(memory, context)
     actions = generate_actions(memory, context, relevance)
     return {"memory_id": memory_id, "actions": actions}
+
+
+@app.patch("/api/actions/{action_id}/status", response_model=dict)
+async def update_action_status_endpoint(action_id: int, payload: ActionStatusUpdate):
+    """Update an action's status and implement automated context feedback loop."""
+    valid_statuses = {"pending", "in_progress", "completed", "dismissed"}
+    if payload.status not in valid_statuses:
+        raise HTTPException(status_code=400, detail=f"Invalid status. Must be one of {valid_statuses}")
+
+    updated = update_action_status(action_id, payload.status)
+    if not updated:
+        raise HTTPException(status_code=404, detail="Action not found")
+
+    context_updated = False
+    if payload.status == "completed":
+        # Fetch the action's title/key skill
+        action_title = updated.get("title", "")
+        # Get current user context
+        ctx = get_context()
+        if ctx and ctx.get("current_skills"):
+            # Parse current_skills (handle comma-separated string or JSON array)
+            current_skills = ctx["current_skills"]
+            if isinstance(current_skills, str):
+                current_skills = [s.strip() for s in current_skills.split(",") if s.strip()]
+            # Determine the key skill from the action title (simple heuristic: first word)
+            key_skill = action_title.split()[0] if action_title else ""
+            # Check if the key skill is already in current_skills
+            if key_skill not in current_skills:
+                current_skills.append(key_skill)
+                # Update user_context in SQLite
+                upsert_context(
+                    name=ctx.get("name", ""),
+                    current_role=ctx.get("current_role", ""),
+                    education=ctx.get("education", ""),
+                    career_goal=ctx.get("career_goal", ""),
+                    target_roles=ctx.get("target_roles", []),
+                    interests=ctx.get("interests", []),
+                    current_skills=current_skills,
+                    current_projects=ctx.get("current_projects", []),
+                    goals=ctx.get("goals", []),
+                )
+                context_updated = True
+
+    response = {
+        "action": updated,
+        "context_updated": context_updated,
+    }
+    return response
 
 
 # ----- Connections API endpoint -----

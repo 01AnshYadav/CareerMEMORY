@@ -20,8 +20,18 @@ def get_connection() -> sqlite3.Connection:
     return conn
 
 
+def _add_column_if_not_exists(conn: sqlite3.Connection, table: str, column: str, definition: str) -> None:
+    """Add a column to a table if it doesn't exist yet (safe migration)."""
+    try:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+        conn.commit()
+    except sqlite3.OperationalError:
+        # Column already exists; ignore
+        pass
+
+
 def init_db() -> None:
-    """Initialize the database and create memories table if it doesn't exist."""
+    """Initialize the database and create tables if they don't exist."""
     conn = get_connection()
     try:
         conn.execute("""
@@ -57,6 +67,24 @@ def init_db() -> None:
                 updated_at TEXT NOT NULL
             )
         """)
+        # Add actions table with status and completed_at columns
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS actions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                memory_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                description TEXT,
+                status TEXT DEFAULT 'pending',
+                completed_at TIMESTAMP NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        # Migration: add columns if they don't exist (for existing databases)
+        _add_column_if_not_exists(conn, "actions", "status", "TEXT DEFAULT 'pending'")
+        _add_column_if_not_exists(conn, "actions", "completed_at", "TIMESTAMP")
+        _add_column_if_not_exists(conn, "actions", "created_at", "TEXT NOT NULL")
+        _add_column_if_not_exists(conn, "actions", "updated_at", "TEXT NOT NULL")
         conn.commit()
     finally:
         conn.close()
@@ -162,6 +190,81 @@ def _row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
     d["prerequisites"] = json.loads(d["prerequisites"])
     d["suggested_actions"] = json.loads(d["suggested_actions"])
     return d
+
+
+def _action_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:
+    """Convert an actions row to a dictionary."""
+    d = dict(row)
+    return d
+
+
+def create_action(
+    memory_id: int,
+    title: str,
+    description: Optional[str] = None,
+) -> int:
+    """Create a new action and return its ID."""
+    now = datetime.utcnow().isoformat() + "Z"
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            """
+            INSERT INTO actions (memory_id, title, description, status, created_at, updated_at)
+            VALUES (?, ?, ?, 'pending', ?, ?)
+            """,
+            (memory_id, title, description, now, now),
+        )
+        conn.commit()
+        return cursor.lastrowid
+    finally:
+        conn.close()
+
+
+def get_actions(memory_id: int) -> List[Dict[str, Any]]:
+    """Get all actions for a given memory ID."""
+    conn = get_connection()
+    try:
+        rows = conn.execute(
+            "SELECT * FROM actions WHERE memory_id = ? ORDER BY created_at DESC",
+            (memory_id,),
+        ).fetchall()
+        return [_action_row_to_dict(row) for row in rows]
+    finally:
+        conn.close()
+
+
+def get_action(action_id: int) -> Optional[Dict[str, Any]]:
+    """Get a single action by ID."""
+    conn = get_connection()
+    try:
+        row = conn.execute("SELECT * FROM actions WHERE id = ?", (action_id,)).fetchone()
+        if row:
+            return _action_row_to_dict(row)
+        return None
+    finally:
+        conn.close()
+
+
+def update_action_status(action_id: int, status: str) -> Optional[Dict[str, Any]]:
+    """Update an action's status. If status is 'completed', set completed_at to current UTC timestamp."""
+    now = datetime.utcnow().isoformat() + "Z"
+    completed_at = None
+    if status == "completed":
+        completed_at = now
+
+    conn = get_connection()
+    try:
+        conn.execute(
+            """
+            UPDATE actions SET status = ?, completed_at = ?, updated_at = ?
+            WHERE id = ?
+            """,
+            (status, completed_at, now, action_id),
+        )
+        conn.commit()
+        return get_action(action_id)
+    finally:
+        conn.close()
 
 
 def _context_row_to_dict(row: sqlite3.Row) -> Dict[str, Any]:

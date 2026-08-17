@@ -92,92 +92,119 @@ export default function MemoriesPage() {
     })
   }
 
+  const [analyzerText, setAnalyzerText] = useState('')
+
   useEffect(() => {
     fetchMemories()
     fetchRelevant()
   }, [])
 
   return (
-    <div className="container">
-      <nav className="nav">
-        <Link href="/">Analyzer</Link>
-        <span className="nav-sep">|</span>
-        <Link href="/memories"><strong>Memories</strong></Link>
-        <span className="nav-sep">|</span>
-        <Link href="/context">Context</Link>
+    <div className="min-h-screen bg-cream font-sans">
+      <nav className="navbar border-b border-[#E3E0D6]">
+        <div className="flex items-center gap-4">
+          <Link href="/" className="brand-title font-light text-sm uppercase tracking-[0.25em]">
+            CareerMemory
+          </Link>
+          <div className="nav-tabs flex gap-2">
+            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">analyzer</div>
+            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">memories</div>
+            <div className="nav-tab border-b-2 border-[#E3E0D6] py-1 px-2 text-sm text-[#1A1A18]">context</div>
+          </div>
+        </div>
       </nav>
 
-      <h1>CareerMemory</h1>
-      <p className="description">Your saved knowledge</p>
+      <main className="container mx-auto py-6">
+        <div className="grid-dashboard gap-6">
 
-      <div className="search-placeholder">
-        <input type="text" placeholder="Search memories..." disabled />
-        <span className="search-note">(search coming soon)</span>
-      </div>
+          {/* Left Column: Analyzer */}
+          <div className="space-y-6">
+            <h2 className="text-xl font-normal tracking-wide text-[#1A1A18] mb-1">
+              Capture Knowledge
+            </h2>
+            <p className="text-xs text-[#787774] mb-4">
+              Paste raw notes, achievements, or feedback. AI will structure and link them.
+            </p>
 
-      {error && (
-        <div className="error">
-          {error}
-          <button onClick={fetchMemories} style={{ marginLeft: '1rem' }}>Retry</button>
-        </div>
-      )}
+            <div>
+              <textarea
+                placeholder="Enter text to analyze for career memory..."
+                className="textarea w-full bg-[#F4F2EC] border border-[#E3E0D6] rounded-md p-4 text-sm text-[#1A1A18] focus:outline-none focus:border-[#1A1A18] h-44 resize-none"
+                value={analyzerText}
+                onChange={(e) => setAnalyzerText(e.target.value)}
+              />
+              <div className="flex items-center justify-between mt-3">
+                <span className="char-count font-mono text-[11px] text-[#787774]">
+                  {analyzerText.length}/1000
+                </span>
+                <button className="action-btn bg-[#1A1A18] hover:bg-[#333330] text-white px-5 py-2 rounded-md text-xs font-mono uppercase tracking-widest">
+                  Analyze
+                </button>
+              </div>
+            </div>
+          </div>
 
-      {loading && <p>Loading memories...</p>}
+          {/* Right Column: Context Preview Panel */}
+          <div>
+            <div className="side-panel border border-[#E3E0D6] rounded-md p-5 shadow-sm">
+              <div className="font-mono text-[10px] tracking-widest text-[#787774] mb-3">
+                RECENT CONTEXT
+              </div>
+              <div className="space-y-2 text-sm text-[#1A1A18]">
+                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
+                  <span className="font-medium">Python</span> — Core skill
+                </div>
+                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
+                  <span className="font-medium">FastAPI</span> — Backend framework
+                </div>
+                <div className="mb-1 py-1 border-y border-[#E3E0D6]">
+                  <span className="font-medium">Docker</span> — Containerization
+                </div>
+              </div>
+            </div>
+          </div>
 
-      {!loading && !error && memories.length === 0 && (
-        <div className="empty-state">
-          <p>No memories saved yet.</p>
-          <p>Save your first piece of knowledge from the analyzer.</p>
-          <Link href="/"><button>Go to Analyzer</button></Link>
-        </div>
-      )}
+          {/* Memories grid */}
+          <div>
+            <section className="relevant-section">
+              <h2 className="text-lg font-medium text-[#1A1A18] mb-4">Most Relevant to You</h2>
+              {relevantLoading && <p>Calculating relevance…</p>}
+              {relevantError && <div className="error">{relevantError}</div>}
+              <div className="memory-grid">
+                {relevantMemories.map((mem) => {
+                  const state = actionsState[mem.id] || { actions: [], loading: false, error: null, expanded: false }
+                  return (
+                    <div key={mem.id} className="relevant-card border border-[#E3E0D6] rounded-md p-4">
+                      <div className="card-header justify-between items-baseline mb-3">
+                        <h3 className="text-base font-semibold">{mem.title}</h3>
+                        <span className="relevance-score text-sm">Relevance: {mem.relevance.score}/100</span>
+                      </div>
+                      <p className="summary text-sm text-[#444] line-height-1.4">{mem.summary}</p>
+                      <div className="topics text-xs text-[#666] mb-3">Topics: {mem.topics.join(', ')}</div>
 
-      {/* Most Relevant to You */}
-      {relevantMemories.length > 0 && (
-        <section className="relevant-section">
-          <h2>Most Relevant to You</h2>
-          {relevantLoading && <p>Calculating relevance…</p>}
-          {relevantError && <div className="error">{relevantError}</div>}
-          <div className="memory-grid">
-            {relevantMemories.map((mem) => {
-              const state = actionsState[mem.id] || { actions: [], loading: false, error: null, expanded: false }
-              return (
-                <div key={mem.id} className="relevant-card">
-                  <div className="card-header">
-                    <h3>{mem.title}</h3>
-                    <span className="relevance-score">Relevance: {mem.relevance.score}/100</span>
-                  </div>
-                  <p className="summary">{mem.summary}</p>
-                  <div className="topics">Topics: {mem.topics.join(', ')}</div>
+                      <button onClick={() => toggleActions(mem.id)} className="action-toggle text-sm hover:text-[#1A1A18]">
+                        {state.expanded ? 'Hide next actions' : 'View next actions'}
+                      </button>
 
-                  <button onClick={() => toggleActions(mem.id)} className="action-toggle">
-                    {state.expanded ? 'Hide next actions' : 'View next actions'}
-                  </button>
-
-                  {state.expanded && (
-                    <div className="actions-container">
-                      {state.loading && <p>Loading actions…</p>}
-                      {state.error && <div className="error">Could not load actions.</div>}
-                      <ActionList actions={state.actions} />
-                      {state.actions.length === 0 && !state.loading && !state.error && (
-                        <p className="empty-actions">No suggested actions for this memory.</p>
+                      {state.expanded && (
+                        <div className="actions-container mt-3">
+                          {state.loading && <p>Loading actions…</p>}
+                          {state.error && <div className="error">Could not load actions.</div>}
+                          <ActionList actions={state.actions} />
+                          {state.actions.length === 0 && !state.loading && !state.error && (
+                            <p className="empty-actions text-xs text-[#999] margin-0">No suggested actions for this memory.</p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
-                </div>
-              )
-            })}
+                  )
+                })}
+              </div>
+            </section>
           </div>
-        </section>
-      )}
 
-      {!loading && !error && memories.length > 0 && (
-        <div className="memory-grid">
-          {memories.map((mem) => (
-            <MemoryCard key={mem.id} memory={mem} />
-          ))}
         </div>
-      )}
+      </main>
     </div>
   )
 }
