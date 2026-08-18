@@ -20,6 +20,10 @@ backend/__pycache__/
 venv/
 backend/careermemory.db
 
+# Runtime logs
+backend/server_*.log
+backend/server_*.err.log
+
 # IDE / OS
 .vscode/
 .idea/
