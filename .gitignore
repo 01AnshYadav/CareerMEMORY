@@ -5,6 +5,7 @@ frontend/node_modules/
 # Build outputs
 frontend/.next/
 frontend/out/
+*.tsbuildinfo
 
 # Environment files (never commit real keys)
 backend/.env

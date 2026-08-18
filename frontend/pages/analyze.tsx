@@ -1,7 +1,7 @@
 import { useRef, useState, FormEvent } from 'react'
 import { useRouter } from 'next/router'
+import { API_BASE } from '../lib/api'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 const MAX_LENGTH = 5000
 const ANALYZE_TIMEOUT_MS = 60000
 

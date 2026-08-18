@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ContextFormData } from '../../types'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_BASE } from '../../lib/api'
 
 const inputClasses =
   'w-full rounded border border-border bg-background px-3 py-2 text-sm text-ink-primary placeholder:text-ink-muted focus-ring'

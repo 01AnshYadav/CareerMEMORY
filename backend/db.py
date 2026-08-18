@@ -10,11 +10,20 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
-DB_PATH = Path(__file__).parent / "careermemory.db"
+def _default_db_path() -> Path:
+    """Default SQLite file location (relative to the backend directory)."""
+    return Path(__file__).parent / "careermemory.db"
+
+
+# Production can override the location via DATABASE_PATH; empty/unset keeps
+# the local default next to this file. No hardcoded Windows paths.
+DB_PATH = Path(os.getenv("DATABASE_PATH") or str(_default_db_path()))
 
 
 def get_connection() -> sqlite3.Connection:
     """Get a database connection with row factory."""
+    if not DB_PATH.parent.exists():
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn

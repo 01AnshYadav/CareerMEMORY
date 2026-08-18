@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import type { Memory } from '../../components/AnalyzeForm'
+import type { Memory } from '../../types'
 import type { Action } from '../../types'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_BASE } from '../../lib/api'
 
 export default function MemoryDetailPage() {
   const router = useRouter()

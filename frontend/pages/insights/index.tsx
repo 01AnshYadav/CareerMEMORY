@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import type { Memory } from '../../types'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_BASE } from '../../lib/api'
 const MIN_MEMORIES = 4
 
 export default function InsightsPage() {

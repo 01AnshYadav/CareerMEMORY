@@ -30,7 +30,7 @@ if not NVIDIA_API_KEY:
 # NVIDIA NIM (OpenAI‑compatible) endpoint
 NVIDIA_API_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
 # A currently available NVIDIA‑hosted model good for structured text tasks
-NVIDIA_MODEL = "nvidia/nemotron-3-super-120b-a12b"
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b")
 
 app = FastAPI(title="CareerMemory Backend", version="0.2.0")
 
@@ -41,9 +41,20 @@ async def startup_event():
 
 
 # ----- CORS -----
+def _parse_origins(raw: str) -> list[str]:
+    """Split a comma-separated origin list, dropping empty entries."""
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
+
+# Localhost stays available for development; production adds the frontend
+# origin(s) through the FRONTEND_URL environment variable (comma-separated).
+FRONTEND_ORIGINS = list(dict.fromkeys(
+    ["http://localhost:3000"] + _parse_origins(os.getenv("FRONTEND_URL", ""))
+))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=FRONTEND_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type"],
@@ -267,6 +278,13 @@ def call_nvidia(user_text: str) -> dict:
         # Include raw model output for debugging
         raw = content if 'content' in locals() else "N/A"
         raise HTTPException(status_code=500, detail=f"Failed to parse NVIDIA response: {e} | Raw response: {raw}")
+
+
+# ----- Health endpoint -----
+@app.get("/health")
+async def health():
+    """Simple liveness check."""
+    return {"status": "ok"}
 
 
 # ----- API endpoint -----

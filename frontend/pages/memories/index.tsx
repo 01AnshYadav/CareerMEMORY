@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import MemoryCard from '../../components/MemoryCard'
 import type { Memory } from '../../types'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+import { API_BASE } from '../../lib/api'
 
 type SortKey = 'newest' | 'oldest' | 'title' | 'importance'
 
